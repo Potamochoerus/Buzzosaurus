@@ -31,7 +31,7 @@ python server.py
 
 Terminal 2, 3, 4... (Clients) :
 ```bash
-python client_test.py Zacc
+python client_test.py Zac
 python client_test.py Poppy
 ```
 

@@ -8,6 +8,7 @@ Open several terminals, one per "player", to simulate a real game.
 Usage:
     python client_test.py <name> [host] [port]
 """
+
 import asyncio
 import json
 import sys

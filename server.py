@@ -11,6 +11,7 @@ slightly out of sync) never matter.
 Run:
     python server.py
 """
+
 import asyncio
 import contextlib
 import json
@@ -47,10 +48,12 @@ class BuzzosaurusServer:
         )
 
     async def send_player_list(self) -> None:
-        await self.broadcast({
-            "type": "player_list",
-            "players": list(self.players.values()),
-        })
+        await self.broadcast(
+            {
+                "type": "player_list",
+                "players": list(self.players.values()),
+            }
+        )
         print(f"Connected players: {", ".join(list(self.players.values()))}")
 
     async def handle_join(self, ws: ServerConnection, name: str) -> None:
@@ -64,7 +67,6 @@ class BuzzosaurusServer:
 
         if any(existing_name == name for existing_name, _ in self.buzzes):
             return  # this player already buzzed this round, ignore
-        
 
         # Timepoint for this buzz
         now = time.monotonic()
@@ -86,11 +88,13 @@ class BuzzosaurusServer:
 
         print(f"[BUZZ] : {name}, + {this_buzz_delay} ms")
 
-        await self.broadcast({
-            "type": "buzz_result",
-            "winner": self.buzzes[0][0],
-            "ranking": ranking,
-        })
+        await self.broadcast(
+            {
+                "type": "buzz_result",
+                "winner": self.buzzes[0][0],
+                "ranking": ranking,
+            }
+        )
 
     async def handle_reset(self) -> None:
         self.buzzes.clear()

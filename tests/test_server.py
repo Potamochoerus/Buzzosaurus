@@ -4,15 +4,15 @@ Tests for the Buzzosaurus server logic.
 Run with:
     pytest
 """
+
 import asyncio
 import json
 import sys
 from pathlib import Path
- 
+
 import pytest
 import pytest_asyncio
 import websockets
-
 
 # Allow "from server import BuzzosaurusServer" without installing the package
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
