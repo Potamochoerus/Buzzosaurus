@@ -18,6 +18,7 @@ import json
 import time
 
 import websockets
+import socket
 from websockets.asyncio.server import ServerConnection
 
 HOST = "0.0.0.0"
@@ -132,12 +133,34 @@ async def admin_console(server: BuzzosaurusServer) -> None:
             print("-> Round reset")
 
 
+def get_local_ip() -> str:
+    """Best-effort way to find this machine's LAN IP address."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
+    finally:
+        s.close()
+
+
 async def main() -> None:
     server = BuzzosaurusServer()
-    async with websockets.serve(server.handler, HOST, PORT):
-        print(f"Buzzosaurus server listening on {HOST}:{PORT}")
-        print("Type 'r' + Enter to reset a round.")
-        await admin_console(server)
+
+    local_ip = get_local_ip()
+    zc = info = None
+    print(f"Server is open on: {local_ip}:{PORT}")
+
+    try:
+        async with websockets.serve(server.handler, HOST, PORT):
+            print(f"Buzzer server listening on {HOST}:{PORT}")
+            print("Type 'r' + Enter to reset a round.")
+            await admin_console(server)
+    finally:
+        if zc is not None:
+            zc.unregister_service(info)
+            zc.close()
 
 
 if __name__ == "__main__":

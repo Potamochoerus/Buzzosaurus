@@ -38,7 +38,7 @@ python client_test.py Poppy
 Each player press enter to buzz. The server will stream the ranking to each client.
 Type `r` + Enter to reset the server and start next round.
 
-To try on several devices on the same networok, replace `localhost` byy the IP adress of the machine hosting the server.
+To try on several devices on the same network, replace `localhost` byy the IP adress of the machine hosting the server.
 ```bash
 python client_test.py Zac 192.168.1.42
 ```

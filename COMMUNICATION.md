@@ -45,6 +45,3 @@ Sent to everyone when the admin resets the round. Erase the ranking on the serve
 ```json
 {"type": "reset"}
 ```
-
-## Network discovery (optionnal, see `discovery.py`)
-The server can be seen on the local network via mDNS/Zeroconf `_Buzzosaurus._tcp.local.`, so that clients to not have to type the IP manually.
