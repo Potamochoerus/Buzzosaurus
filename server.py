@@ -149,18 +149,12 @@ async def main() -> None:
     server = BuzzosaurusServer()
 
     local_ip = get_local_ip()
-    zc = info = None
     print(f"Server is open on: {local_ip}:{PORT}")
 
-    try:
-        async with websockets.serve(server.handler, HOST, PORT):
-            print(f"Buzzer server listening on {HOST}:{PORT}")
-            print("Type 'r' + Enter to reset a round.")
-            await admin_console(server)
-    finally:
-        if zc is not None:
-            zc.unregister_service(info)
-            zc.close()
+    async with websockets.serve(server.handler, HOST, PORT):
+        print(f"Buzzer server listening on {HOST}:{PORT}")
+        print("Type 'r' + Enter to reset a round.")
+        await admin_console(server)
 
 
 if __name__ == "__main__":
