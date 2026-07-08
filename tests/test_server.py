@@ -17,7 +17,7 @@ import websockets
 # Allow "from server import BuzzosaurusServer" without installing the package
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from server import BuzzosaurusServer  # noqa: E402
+from src.server import BuzzosaurusServer  # noqa: E402
 
 
 @pytest_asyncio.fixture
@@ -106,6 +106,48 @@ async def test_duplicate_buzz_from_same_player_is_ignored(running_server):
     assert server.buzzes == []
 
     await ws1.close()
+
+
+@pytest.mark.asyncio
+async def test_two_players_buzz_simultaneously_without_error(running_server):
+    server, uri = running_server
+    ws1 = await connect_and_join(uri, "Zac")
+    ws2 = await connect_and_join(uri, "Poppy")
+    await ws1.recv()  # Zac sees Poppy's join broadcast
+
+    await asyncio.gather(
+        ws1.send(json.dumps({"type": "buzz"})),
+        ws2.send(json.dumps({"type": "buzz"})),
+    )
+
+    result1 = None
+    result2 = None
+
+    for _ in range(2):
+        msg = json.loads(await asyncio.wait_for(ws1.recv(), timeout=1))
+        print(msg)
+        if msg.get("type") == "buzz_result" and len(msg.get("ranking", [])) == 2:
+            result1 = msg
+            break
+
+    for _ in range(2):
+        msg = json.loads(await asyncio.wait_for(ws2.recv(), timeout=1))
+        print(msg)
+        if msg.get("type") == "buzz_result" and len(msg.get("ranking", [])) == 2:
+            result2 = msg
+            break
+
+    assert result1 is not None
+    assert result2 is not None
+    assert result1["type"] == "buzz_result"
+    assert result2["type"] == "buzz_result"
+    assert result1["winner"] in {"Zac", "Poppy"}
+    assert result2["winner"] in {"Zac", "Poppy"}
+    assert len(server.buzzes) == 2
+    assert {entry["name"] for entry in result1["ranking"]} == {"Zac", "Poppy"}
+
+    await ws1.close()
+    await ws2.close()
 
 
 @pytest.mark.asyncio

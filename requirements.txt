@@ -1,3 +1,4 @@
 websockets>=16.0
 pytest>=8.0
 pytest-asyncio>=1.0
+flet>=0.85.0

@@ -33,6 +33,17 @@ class BuzzosaurusServer:
         self.players: dict[ServerConnection, str] = {}
         # ordered list of (name, timestamp) for the current round
         self.buzzes: list[tuple[str, float]] = []
+        self._state_changed_callback = None
+
+    def set_state_changed_callback(self, callback) -> None:
+        self._state_changed_callback = callback
+
+    async def _notify_state_changed(self) -> None:
+        if self._state_changed_callback is None:
+            return
+        result = self._state_changed_callback()
+        if asyncio.iscoroutine(result):
+            await result
 
     @property
     def locked(self) -> bool:
@@ -55,11 +66,12 @@ class BuzzosaurusServer:
                 "players": list(self.players.values()),
             }
         )
-        print(f"Connected players: {", ".join(list(self.players.values()))}")
+        print(f"Connected players: {', '.join(list(self.players.values()))}")
 
     async def handle_join(self, ws: ServerConnection, name: str) -> None:
         self.players[ws] = name
         await self.send_player_list()
+        await self._notify_state_changed()
 
     async def handle_buzz(self, ws: ServerConnection) -> None:
         name = self.players.get(ws)
@@ -78,28 +90,30 @@ class BuzzosaurusServer:
         # First player buzz timepoint
         first_ts = self.buzzes[0][1]
 
-        # Delta of this buzz
-        this_buzz_delay = round((now - first_ts) * 1000)
-
         # Rank all buzz
         ranking = [
             {"name": n, "delta_ms": round((ts - first_ts) * 1000)}
             for n, ts in self.buzzes
         ]
 
-        print(f"[BUZZ] : {name}, + {this_buzz_delay} ms")
+        await self._notify_state_changed()
 
         await self.broadcast(
             {
                 "type": "buzz_result",
                 "winner": self.buzzes[0][0],
                 "ranking": ranking,
+                "current_buzz": {
+                    "name": name,
+                    "delta_ms": round((now - first_ts) * 1000),
+                },
             }
         )
 
     async def handle_reset(self) -> None:
         self.buzzes.clear()
         await self.broadcast({"type": "reset"})
+        await self._notify_state_changed()
 
     async def handler(self, ws: ServerConnection) -> None:
         try:
@@ -148,11 +162,8 @@ def get_local_ip() -> str:
 async def main() -> None:
     server = BuzzosaurusServer()
 
-    local_ip = get_local_ip()
-    print(f"Server is open on: {local_ip}:{PORT}")
-
     async with websockets.serve(server.handler, HOST, PORT):
-        print(f"Buzzer server listening on {HOST}:{PORT}")
+        print(f"Buzzosaurus server listening on {HOST}:{PORT}")
         print("Type 'r' + Enter to reset a round.")
         await admin_console(server)
 
