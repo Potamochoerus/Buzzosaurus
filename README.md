@@ -6,16 +6,45 @@ buzz, the server will determine who buzzed first.
 
  - **Phase 1** : Prototype app only working from terminal.
  - **Phase 2** : Basic UI for both server and client.
+ - **Phase 3** : Basic UI unified with both server and client views.
 
 ## Repo
 
-- `src/server.py` : WebSocket server, timestamp source and ground truth.
-- `src/client.py` : Client console to mimic a player.
-- `app/server_ui.py` : Server UI.
-- `app/player_ui.py` : Player UI.
-- `tests/test_server.py` : Automatized tests for server logic.
-- `tests/test_ui.py` : Automatized tests for UI logic.
-- `COMMUNICATION.md` : Description of messages exchanged between server and clients.
+```
+COMMUNICATION.md          # Description of messages exchanged between server and clients.
+LICENCE                   # Licence file
+requirements.txt          # App dependencies
+src/
+└── server.py             # Server class definition
+app/
+├── __init__.py
+├── routes.py             # Route definitions
+├── router.py             # Router class for navigation
+└── views/
+    ├── __init__.py
+    ├── home.py           # Main menu view
+    ├── player_login.py   # Player login/connection view
+    ├── player_playing.py # Player buzzer/game view
+    └── server.py         # Server hosting view
+main.py                   # Updated entry point
+tests/
+├── test_main.py          # Test navigation between views
+├── test_server.py        # Test server class works as expected
+└── test_ui.py            # Test different UI work
+.github/
+└── workflows/
+    ├── tests.yml         # Github Action to check tests pass
+    └── black.yml         # Github Action to check black styling
+```
+
+## Navigation Flow
+
+```
+HOME
+├── → SERVER (host button)
+└── → PLAYER_LOGIN (join button)
+      └── → PLAYER_PLAYING (on successful connection)
+```
 
 ## Install
 
@@ -48,14 +77,10 @@ python -m src.client Zac 192.168.1.42
 
 ## Test UI
 
-Terminal 1 (Server) :
-```bash
-python -m app.server_ui
-```
+Terminal:
 
-Terminal 2, 3, 4... (Clients) :
 ```bash
-python -m app.client_ui
+python main.py
 ```
 
 ## Run tests

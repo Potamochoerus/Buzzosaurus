@@ -1,41 +1,41 @@
 """
-Buzzosaurus - Server UI
------------------------
-Run with:
-    python app/server_ui.py
+Server view - Server UI for hosting a game.
 """
 
 import asyncio
-import socket
-
 import flet as ft
 import websockets
-
 from src.server import BuzzosaurusServer, get_local_ip
+from app.routes import HOME
 
 HOST = "0.0.0.0"
 PORT = 8766
 
 
-class ServerUIState:
+class ServerState:
+    """Mutable state for server view."""
+
     def __init__(self):
         self.server = BuzzosaurusServer()
         self.ws_server = None
         self.running = False
 
 
-async def main(page: ft.Page):
+async def build_server_view(page: ft.Page, router):
+    """Build and return the server view."""
+
     page.title = "Buzzosaurus - Server"
-    page.padding = 20
     page.vertical_alignment = ft.MainAxisAlignment.START
 
-    state = ServerUIState()
+    state = ServerState()
 
     status_text = ft.Text("Server stopped", color=ft.Colors.GREY_700)
     players_text = ft.Text("Connected players: 0", size=16)
     log_text = ft.Text("", selectable=True)
     start_button = ft.Button("Start server", width=220)
     stop_button = ft.Button("Stop server", width=220, disabled=True)
+    quit_button = ft.Button("Back", width=120)
+    reset_button = ft.Button("Reset round", width=220)
 
     async def update_status(message: str):
         status_text.value = message
@@ -96,35 +96,36 @@ async def main(page: ft.Page):
         await reset_log()
         await append_log("New round")
 
+    async def on_quit_click(e):
+        await stop_server(None)
+        await router.navigate(HOME)
+
     start_button.on_click = start_server
     stop_button.on_click = stop_server
-    reset_button = ft.Button("Reset round", width=220)
     reset_button.on_click = reset_round
+    quit_button.on_click = on_quit_click
 
-    page.add(
-        ft.Column(
-            controls=[
-                ft.Text("Buzzosaurus Server", size=28, weight=ft.FontWeight.BOLD),
-                status_text,
-                ft.Row([start_button, stop_button, reset_button]),
-                players_text,
-                ft.Container(
-                    content=ft.Column([log_text], scroll=ft.ScrollMode.AUTO),
-                    width=600,
-                    height=240,
-                    border=ft.border.Border(
-                        left=ft.border.BorderSide(1, ft.Colors.GREY_400),
-                        right=ft.border.BorderSide(1, ft.Colors.GREY_400),
-                        top=ft.border.BorderSide(1, ft.Colors.GREY_400),
-                        bottom=ft.border.BorderSide(1, ft.Colors.GREY_400),
-                    ),
-                    padding=10,
+    view = ft.Column(
+        controls=[
+            ft.Text("Buzzosaurus Server", size=28, weight=ft.FontWeight.BOLD),
+            status_text,
+            ft.Row([start_button, stop_button, reset_button]),
+            players_text,
+            ft.Container(
+                content=ft.Column([log_text], scroll=ft.ScrollMode.AUTO),
+                width=600,
+                height=240,
+                border=ft.border.Border(
+                    left=ft.border.BorderSide(1, ft.Colors.GREY_400),
+                    right=ft.border.BorderSide(1, ft.Colors.GREY_400),
+                    top=ft.border.BorderSide(1, ft.Colors.GREY_400),
+                    bottom=ft.border.BorderSide(1, ft.Colors.GREY_400),
                 ),
-            ],
-            spacing=12,
-        )
+                padding=10,
+            ),
+            quit_button,
+        ],
+        spacing=12,
     )
 
-
-if __name__ == "__main__":
-    ft.run(main)
+    return view

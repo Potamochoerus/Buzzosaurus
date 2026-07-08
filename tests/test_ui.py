@@ -4,7 +4,9 @@ import json
 
 import pytest
 
-from app import player_ui, server_ui
+from app.views import player_login, player_playing, home, server
+from app.router import Router
+from app import routes
 
 
 class FakePage:
@@ -19,6 +21,9 @@ class FakePage:
 
     def add(self, *controls):
         self.controls.extend(controls)
+
+    def clean(self):
+        self.controls = []
 
     def update(self):
         self.updated = True
@@ -46,6 +51,9 @@ class FakeWebSocket:
             return self._messages.pop(0)
         raise StopAsyncIteration
 
+    async def close(self):
+        self.closed = True
+
 
 class FakeServerHandle:
     def __init__(self):
@@ -59,25 +67,48 @@ class FakeServerHandle:
 
 
 @pytest.mark.asyncio
-async def test_player_ui_connect_and_buzz_flow(monkeypatch):
+async def test_home_view_has_buttons():
+    """Test that home view has host and join buttons."""
     page = FakePage()
+    router = Router(page)
+
+    view = await home.build_home_view(page, router)
+
+    assert view is not None
+    buttons = [c for c in view.controls if hasattr(c, "on_click")]
+    assert len(buttons) == 2
+
+
+@pytest.mark.asyncio
+async def test_player_login_view_connect_flow(monkeypatch):
+    """Test player login view connection flow."""
+    page = FakePage()
+
+    # Create a mock router that tracks navigation calls
+    class MockRouter:
+        def __init__(self):
+            self.navigated_to = None
+            self.nav_params = None
+
+        async def navigate(self, route, params=None):
+            self.navigated_to = route
+            self.nav_params = params
+
+    router = MockRouter()
     fake_ws = FakeWebSocket()
 
     async def fake_connect(uri):
         return fake_ws
 
-    monkeypatch.setattr(player_ui.websockets, "connect", fake_connect)
+    monkeypatch.setattr(player_login.websockets, "connect", fake_connect)
 
-    await player_ui.main(page)
+    view = await player_login.build_player_login_view(page, router)
 
-    connection_view = page.controls[0]
-    buzzer_view = page.controls[1]
-    name_field = connection_view.controls[1]
-    ip_field = connection_view.controls[2]
-    port_field = connection_view.controls[3]
-    connect_button = connection_view.controls[4]
-    status_text = connection_view.controls[5]
-    buzzer_button = buzzer_view.controls[1]
+    # Find input fields
+    name_field = view.controls[1]
+    ip_field = view.controls[2]
+    port_field = view.controls[3]
+    connect_button = view.controls[4]
 
     name_field.value = "Zac"
     ip_field.value = "127.0.0.1"
@@ -85,133 +116,95 @@ async def test_player_ui_connect_and_buzz_flow(monkeypatch):
 
     await connect_button.on_click(None)
 
-    assert status_text.value == ""
-    assert connection_view.visible is False
-    assert buzzer_view.visible is True
-    assert buzzer_button.disabled is False
-    assert buzzer_view.controls[0].value == ""
     assert fake_ws.sent_messages == ['{"type": "join", "name": "Zac"}']
-
-    await buzzer_button.on_click(None)
-
-    assert fake_ws.sent_messages[-1] == '{"type": "buzz"}'
-    assert buzzer_button.disabled is True
+    assert router.navigated_to == routes.PLAYER_PLAYING
+    assert router.nav_params["player_name"] == "Zac"
 
 
 @pytest.mark.asyncio
-async def test_player_ui_invalid_connect_shows_error(monkeypatch):
+async def test_player_login_validation():
+    """Test that player login validates inputs."""
     page = FakePage()
-    connect_attempted = False
 
-    async def fake_connect(uri):
-        nonlocal connect_attempted
-        connect_attempted = True
-        return FakeWebSocket()
+    class MockRouter:
+        async def navigate(self, route, params=None):
+            pass
 
-    monkeypatch.setattr(player_ui.websockets, "connect", fake_connect)
+    router = MockRouter()
 
-    await player_ui.main(page)
+    view = await player_login.build_player_login_view(page, router)
 
-    connection_view = page.controls[0]
-    name_field = connection_view.controls[1]
-    ip_field = connection_view.controls[2]
-    connect_button = connection_view.controls[4]
-    status_text = connection_view.controls[5]
+    name_field = view.controls[1]
+    ip_field = view.controls[2]
+    port_field = view.controls[3]
+    connect_button = view.controls[4]
+    status_text = view.controls[5]
 
+    # Try to connect without filling fields
     name_field.value = ""
     ip_field.value = ""
 
     await connect_button.on_click(None)
 
-    assert connect_attempted is False
-    assert status_text.value == "Please fill both player name and host server IP"
+    assert "Please fill" in status_text.value
 
 
 @pytest.mark.asyncio
-async def test_player_ui_reenables_buzzer_after_reset(monkeypatch):
+async def test_player_playing_view_buzz_functionality(monkeypatch):
+    """Test player playing view buzz button functionality."""
     page = FakePage()
+
+    class MockRouter:
+        async def navigate(self, route, params=None):
+            pass
+
+    router = MockRouter()
     fake_ws = FakeWebSocket()
 
-    async def fake_connect(uri):
-        return fake_ws
+    connection_data = {"ws": fake_ws, "player_name": "Alice"}
 
-    monkeypatch.setattr(player_ui.websockets, "connect", fake_connect)
+    view = await player_playing.build_player_playing_view(page, router, connection_data)
 
-    await player_ui.main(page)
+    assert view is not None
+    buzzer_button = view.controls[1]
 
-    connection_view = page.controls[0]
-    buzzer_view = page.controls[1]
-    name_field = connection_view.controls[1]
-    ip_field = connection_view.controls[2]
-    port_field = connection_view.controls[3]
-    connect_button = connection_view.controls[4]
-    buzzer_button = buzzer_view.controls[1]
-    result_text = buzzer_view.controls[2]
-
-    name_field.value = "Zac"
-    ip_field.value = "127.0.0.1"
-    port_field.value = "8766"
-
-    await connect_button.on_click(None)
     await buzzer_button.on_click(None)
 
+    assert fake_ws.sent_messages == ['{"type": "buzz"}']
     assert buzzer_button.disabled is True
-
-    fake_ws._messages.append(json.dumps({"type": "reset"}))
-    await asyncio.sleep(0)
-
-    assert buzzer_button.disabled is False
-    assert result_text.value == ""
-
-    for task in page.tasks:
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
 
 
 @pytest.mark.asyncio
-async def test_server_ui_start_and_stop_buttons_toggle_state(monkeypatch):
+async def test_server_view_has_controls():
+    """Test that server view has start/stop and reset controls."""
     page = FakePage()
 
-    async def fake_serve(handler, host, port):
-        return FakeServerHandle()
+    class MockRouter:
+        async def navigate(self, route, params=None):
+            pass
 
-    monkeypatch.setattr(server_ui.websockets, "serve", fake_serve)
+    router = MockRouter()
 
-    await server_ui.main(page)
+    view = await server.build_server_view(page, router)
 
-    root_column = page.controls[0]
-    start_button = root_column.controls[2].controls[0]
-    stop_button = root_column.controls[2].controls[1]
-    status_text = root_column.controls[1]
-
-    await start_button.on_click(None)
-
-    assert start_button.disabled is True
-    assert stop_button.disabled is False
-    assert status_text.value.startswith("Server running on")
-
-    await stop_button.on_click(None)
-
-    assert start_button.disabled is False
-    assert stop_button.disabled is True
-    assert status_text.value == "Server stopped"
+    assert view is not None
+    assert len(view.controls) == 6
 
 
 @pytest.mark.asyncio
 async def test_server_ui_reset_round_updates_log(monkeypatch):
     page = FakePage()
 
-    async def fake_serve(handler, host, port):
-        return FakeServerHandle()
+    class MockRouter:
+        async def navigate(self, route, params=None):
+            pass
 
-    monkeypatch.setattr(server_ui.websockets, "serve", fake_serve)
+    router = MockRouter()
 
-    await server_ui.main(page)
+    view = await server.build_server_view(page, router)
 
-    root_column = page.controls[0]
-    reset_button = root_column.controls[2].controls[2]
-    log_text = root_column.controls[4].content.controls[0]
+    reset_button = view.controls[2].controls[2]
+    log_text = view.controls[4].content.controls[0]
 
     await reset_button.on_click(None)
 

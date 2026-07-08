@@ -131,6 +131,7 @@ class BuzzosaurusServer:
         finally:
             self.players.pop(ws, None)
             await self.send_player_list()
+            await self._notify_state_changed()
 
 
 async def admin_console(server: BuzzosaurusServer) -> None:
