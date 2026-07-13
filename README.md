@@ -4,6 +4,8 @@ A buzzer app that can be used for quizz party games. It works on local network.
 An admin hosts the game on a PC/smartphone, the other players can join. Each player can
 buzz, the server will determine who buzzed first.
 
+<img src="assets/icon.png" width="200">
+
  - **Phase 1** : Prototype app only working from terminal.
  - **Phase 2** : Basic UI for both server and client.
  - **Phase 3** : Basic UI unified with both server and client views.
