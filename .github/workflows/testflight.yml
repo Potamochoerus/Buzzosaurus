@@ -1,0 +1,145 @@
+name: Build & Upload to TestFlight
+ 
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+ 
+env:
+  UV_PYTHON: 3.13
+  PYTHONUTF8: 1
+  FLET_CLI_NO_RICH_OUTPUT: 1
+  BUNDLE_ID: "com.potamochoerus.buzzosaurus"
+  ORG: "com.potamochoerus"
+  PRODUCT_NAME: "Buzzosaurus"
+
+jobs:
+  test:
+    uses: ./.github/workflows/tests.yml
+ 
+  lint:
+    uses: ./.github/workflows/black.yml
+ 
+  build-and-upload:
+    needs: [test, lint]     # only runs if both succeed
+    runs-on: macos-latest
+    timeout-minutes: 60
+ 
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+ 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+ 
+      - name: Install Flet
+        run: pip install flet
+ 
+      # ---------- Import signing certificate + provisioning profile ----------
+      - name: Import Apple certificate & provisioning profile
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          PROVISIONING_PROFILE_NAME: ${{ secrets.PROVISIONING_PROFILE_NAME }}
+        run: |
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+ 
+          echo -n "$APPLE_CERTIFICATE_BASE64" | base64 --decode -o $CERT_PATH
+          echo -n "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PROFILE_PATH
+ 
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+ 
+          security import $CERT_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A \
+            -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+ 
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+      
+      - name: Verify signing identity and profile
+        run: |
+          echo "Valid identities:"
+          security find-identity -v -p codesigning $RUNNER_TEMP/app-signing.keychain-db
+
+          echo "Installed profiles:"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+
+          echo "Profile contents:"
+          security cms -D -i $RUNNER_TEMP/profile.mobileprovision | plutil -p -
+            
+      # ---------- Build the signed IPA ----------
+      - name: flet build ipa
+        run: |
+          flet build ipa \
+            --yes \
+            --clear-cache \
+            -v \
+            --bundle-id "$BUNDLE_ID" \
+            --build-number "$(date +%Y%m%d)_$GITHUB_RUN_NUMBER" \
+            --org "$ORG" \
+            --product "$PRODUCT_NAME" \
+            --ios-team-id "${{ secrets.APPLE_TEAM_ID }}" \
+            --ios-signing-certificate "Apple Distribution" \
+            --ios-provisioning-profile "${{ secrets.PROVISIONING_PROFILE_NAME }}" \
+            --ios-export-method app-store-connect \
+            --info-plist ITSAppUsesNonExemptEncryption=false \
+            --info-plist "NSPhotoLibraryUsageDescription=This app does not access the photo library." \
+            --info-plist "NSCameraUsageDescription=This app does not access the camera." \
+            --info-plist "NSLocationWhenInUseUsageDescription=This app does not access location services."
+
+      - name: Locate built IPA
+        id: locate-ipa
+        run: |
+          echo "Contents of build/ directory:"
+          find build -type f 2>/dev/null || echo "(no build/ directory found)"
+ 
+          IPA_PATH=$(find . -name "*.ipa" -not -path "*/node_modules/*" 2>/dev/null | head -n 1)
+ 
+          if [ -z "$IPA_PATH" ]; then
+            echo "::error::No .ipa file found anywhere in the repo after flet build. Check the build step above for silent failures."
+            exit 1
+          fi
+ 
+          echo "Found IPA at: $IPA_PATH"
+          echo "path=$IPA_PATH" >> "$GITHUB_OUTPUT"
+ 
+      - name: Upload IPA artifact (backup copy)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-testflight-ipa
+          path: ${{ steps.locate-ipa.outputs.path }}
+ 
+      # Upload to App Store Connect 
+      - name: Upload to TestFlight
+        env:
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$APPSTORE_PRIVATE_KEY" > ~/private_keys/AuthKey_$APPSTORE_KEY_ID.p8
+ 
+          IPA_PATH=$(find build/ipa -name "*.ipa" | head -n 1)
+ 
+          xcrun altool --upload-app \
+            -f "$IPA_PATH" \
+            -t ios \
+            --apiKey "$APPSTORE_KEY_ID" \
+            --apiIssuer "$APPSTORE_ISSUER_ID"
+ 
+      - name: Clean up keychain
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
