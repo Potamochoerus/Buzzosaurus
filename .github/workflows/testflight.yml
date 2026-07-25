@@ -34,7 +34,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "${{ env.UV_PYTHON }}"
  
       - name: Install Flet
         run: pip install flet==0.85.0
@@ -93,6 +93,7 @@ jobs:
             --ios-team-id "${{ secrets.APPLE_TEAM_ID }}" \
             --ios-signing-certificate "Apple Distribution" \
             --ios-provisioning-profile "${{ secrets.PROVISIONING_PROFILE_NAME }}" \
+            --python-version "$UV_PYTHON" \
             --ios-export-method app-store-connect \
             --info-plist ITSAppUsesNonExemptEncryption=false \
             --info-plist "NSPhotoLibraryUsageDescription=This app does not access the photo library." \
