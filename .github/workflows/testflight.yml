@@ -9,10 +9,7 @@ env:
   UV_PYTHON: 3.13
   PYTHONUTF8: 1
   FLET_CLI_NO_RICH_OUTPUT: 1
-  BUNDLE_ID: "com.potamochoerus.buzzosaurus"
-  ORG: "com.potamochoerus"
-  PRODUCT_NAME: "Buzzosaurus"
-
+ 
 jobs:
   test:
     uses: ./.github/workflows/tests.yml
@@ -86,20 +83,12 @@ jobs:
             --yes \
             --clear-cache \
             -v \
-            --bundle-id "$BUNDLE_ID" \
             --build-number "$(date +%Y%m%d)_$GITHUB_RUN_NUMBER" \
-            --org "$ORG" \
-            --product "$PRODUCT_NAME" \
             --ios-team-id "${{ secrets.APPLE_TEAM_ID }}" \
             --ios-signing-certificate "Apple Distribution" \
             --ios-provisioning-profile "${{ secrets.PROVISIONING_PROFILE_NAME }}" \
-            --python-version "$UV_PYTHON" \
-            --ios-export-method app-store-connect \
-            --info-plist ITSAppUsesNonExemptEncryption=false \
-            --info-plist "NSPhotoLibraryUsageDescription=This app does not access the photo library." \
-            --info-plist "NSCameraUsageDescription=This app does not access the camera." \
-            --info-plist "NSLocationWhenInUseUsageDescription=This app does not access location services."
-
+            --ios-export-method app-store-connect
+ 
       - name: Locate built IPA
         id: locate-ipa
         run: |

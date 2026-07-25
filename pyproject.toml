@@ -1,0 +1,22 @@
+[project]
+name = "buzzosaurus"
+version = "1.0.0"
+description = "Buzzosaurus - buzzer app for quizz games"
+requires-python = "==3.13"
+dependencies = [
+    "flet==0.85.0",
+    "websockets>=16.0",
+    "pytest>=8.0",
+    "pytest-asyncio>=1.0"
+]
+ 
+[tool.flet]
+org = "com.potamochoerus"
+product = "Buzzosaurus"
+bundle_id = "com.potamochoerus.buzzosaurus"
+ 
+[tool.flet.ios.info]
+ITSAppUsesNonExemptEncryption = false
+NSPhotoLibraryUsageDescription = "This app does not access the photo library."
+NSCameraUsageDescription = "This app does not access the camera."
+NSLocationWhenInUseUsageDescription = "This app does not access location services."
