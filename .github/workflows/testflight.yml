@@ -88,23 +88,7 @@ jobs:
             --ios-signing-certificate "Apple Distribution" \
             --ios-provisioning-profile "${{ secrets.PROVISIONING_PROFILE_NAME }}" \
             --ios-export-method app-store-connect
- 
-      - name: Locate built IPA
-        id: locate-ipa
-        run: |
-          echo "Contents of build/ directory:"
-          find build -type f 2>/dev/null || echo "(no build/ directory found)"
- 
-          IPA_PATH=$(find . -name "*.ipa" -not -path "*/node_modules/*" 2>/dev/null | head -n 1)
- 
-          if [ -z "$IPA_PATH" ]; then
-            echo "::error::No .ipa file found anywhere in the repo after flet build. Check the build step above for silent failures."
-            exit 1
-          fi
- 
-          echo "Found IPA at: $IPA_PATH"
-          echo "path=$IPA_PATH" >> "$GITHUB_OUTPUT"
- 
+
       - name: Upload IPA artifact (backup copy)
         uses: actions/upload-artifact@v4
         with:

@@ -54,16 +54,18 @@ async def build_player_playing_view(page: ft.Page, router, connection_data=None)
 
     quit_button = ft.Button("Quit", width=120)
 
-    view = ft.Column(
-        controls=[
-            player_list_text,
-            buzzer_button,
-            result_text,
-            quit_button,
-        ],
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        spacing=20,
-        expand=True,
+    view = ft.SafeArea(
+        content=ft.Column(
+            controls=[
+                player_list_text,
+                buzzer_button,
+                result_text,
+                quit_button,
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=20,
+            expand=True,
+        )
     )
 
     buzzer_button_label.value = state.player_name

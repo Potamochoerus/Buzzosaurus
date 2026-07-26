@@ -75,7 +75,7 @@ async def test_home_view_has_buttons():
     view = await home.build_home_view(page, router)
 
     assert view is not None
-    buttons = [c for c in view.controls if hasattr(c, "on_click")]
+    buttons = [c for c in view.content.controls if hasattr(c, "on_click")]
     assert len(buttons) == 2
 
 
@@ -105,10 +105,10 @@ async def test_player_login_view_connect_flow(monkeypatch):
     view = await player_login.build_player_login_view(page, router)
 
     # Find input fields
-    name_field = view.controls[1]
-    ip_field = view.controls[2]
-    port_field = view.controls[3]
-    connect_button = view.controls[4]
+    name_field = view.content.controls[1]
+    ip_field = view.content.controls[2]
+    port_field = view.content.controls[3]
+    connect_button = view.content.controls[4]
 
     name_field.value = "Zac"
     ip_field.value = "127.0.0.1"
@@ -134,11 +134,11 @@ async def test_player_login_validation():
 
     view = await player_login.build_player_login_view(page, router)
 
-    name_field = view.controls[1]
-    ip_field = view.controls[2]
-    port_field = view.controls[3]
-    connect_button = view.controls[4]
-    status_text = view.controls[5]
+    name_field = view.content.controls[1]
+    ip_field = view.content.controls[2]
+    port_field = view.content.controls[3]
+    connect_button = view.content.controls[4]
+    status_text = view.content.controls[5]
 
     # Try to connect without filling fields
     name_field.value = ""
@@ -166,7 +166,7 @@ async def test_player_playing_view_buzz_functionality(monkeypatch):
     view = await player_playing.build_player_playing_view(page, router, connection_data)
 
     assert view is not None
-    buzzer_button = view.controls[1]
+    buzzer_button = view.content.controls[1]
 
     await buzzer_button.on_click(None)
 
@@ -188,7 +188,7 @@ async def test_server_view_has_controls():
     view = await server.build_server_view(page, router)
 
     assert view is not None
-    assert len(view.controls) == 6
+    assert len(view.content.controls) == 6
 
 
 @pytest.mark.asyncio
@@ -203,8 +203,8 @@ async def test_server_ui_reset_round_updates_log(monkeypatch):
 
     view = await server.build_server_view(page, router)
 
-    reset_button = view.controls[2].controls[2]
-    log_text = view.controls[4].content.controls[0]
+    reset_button = view.content.controls[2].controls[2]
+    log_text = view.content.controls[4].content.controls[0]
 
     await reset_button.on_click(None)
 

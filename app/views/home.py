@@ -21,15 +21,17 @@ async def build_home_view(page: ft.Page, router):
     host_button = ft.Button("Host a game", width=240, on_click=on_host_click)
     player_button = ft.Button("Join as player", width=240, on_click=on_player_click)
 
-    view = ft.Column(
-        controls=[
-            title_text,
-            subtitle_text,
-            host_button,
-            player_button,
-        ],
-        spacing=16,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+    view = ft.SafeArea(
+        content=ft.Column(
+            controls=[
+                title_text,
+                subtitle_text,
+                host_button,
+                player_button,
+            ],
+            spacing=16,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        )
     )
 
     return view
