@@ -129,9 +129,9 @@ async def build_server_view(page: ft.Page, router):
             ],
             spacing=12,
             expand=True,
-            scroll=ft.ScrollMode.AUTO
-        ), 
-        expand=True
+            scroll=ft.ScrollMode.AUTO,
+        ),
+        expand=True,
     )
 
     return view
