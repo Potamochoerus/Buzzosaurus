@@ -43,11 +43,11 @@ async def test_router_navigates_to_home(monkeypatch):
     await router.navigate(routes.HOME)
 
     assert router.current_route == routes.HOME
-    assert len(page.controls) == 1
+    assert len(page.controls[0].content.controls) == 4
     # Home view is a Column with title, subtitle, and two buttons
-    column = page.controls[0]
+    column = page.controls[0].content
     assert hasattr(column, "controls")
-    buttons = [c for c in column.controls if hasattr(c, "on_click")]
+    buttons = [c.content for c in column.controls if hasattr(c, "on_click")]
     assert len(buttons) == 2
 
 
@@ -58,7 +58,7 @@ async def test_router_navigate_server_from_home(monkeypatch):
     router = Router(page)
 
     await router.navigate(routes.HOME)
-    home_column = page.controls[0]
+    home_column = page.controls[0].content
     buttons = [c for c in home_column.controls if hasattr(c, "on_click")]
     host_button = buttons[0]
 
@@ -74,7 +74,7 @@ async def test_router_navigate_player_login_from_home(monkeypatch):
     router = Router(page)
 
     await router.navigate(routes.HOME)
-    home_column = page.controls[0]
+    home_column = page.controls[0].content
     buttons = [c for c in home_column.controls if hasattr(c, "on_click")]
     player_button = buttons[1]
 
