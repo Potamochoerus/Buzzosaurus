@@ -48,7 +48,7 @@ class Router:
         # Set page properties
         self.page.vertical_alignment = ft.MainAxisAlignment.CENTER
         self.page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-        self.page.padding = 20
+        self.page.padding = 0
 
         # Add new view
         self.page.add(self._current_view)

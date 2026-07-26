@@ -105,27 +105,33 @@ async def build_server_view(page: ft.Page, router):
     reset_button.on_click = reset_round
     quit_button.on_click = on_quit_click
 
-    view = ft.Column(
-        controls=[
-            ft.Text("Buzzosaurus Server", size=28, weight=ft.FontWeight.BOLD),
-            status_text,
-            ft.Row([start_button, stop_button, reset_button]),
-            players_text,
-            ft.Container(
-                content=ft.Column([log_text], scroll=ft.ScrollMode.AUTO),
-                width=600,
-                height=240,
-                border=ft.border.Border(
-                    left=ft.border.BorderSide(1, ft.Colors.GREY_400),
-                    right=ft.border.BorderSide(1, ft.Colors.GREY_400),
-                    top=ft.border.BorderSide(1, ft.Colors.GREY_400),
-                    bottom=ft.border.BorderSide(1, ft.Colors.GREY_400),
+    view = ft.SafeArea(
+        content=ft.Column(
+            controls=[
+                ft.Text("Buzzosaurus Server", size=28, weight=ft.FontWeight.BOLD),
+                status_text,
+                ft.Row([start_button, stop_button, reset_button], wrap=True),
+                players_text,
+                ft.Container(
+                    content=ft.Column([log_text], scroll=ft.ScrollMode.AUTO),
+                    width=None,
+                    expand=True,
+                    height=None,
+                    border=ft.border.Border(
+                        left=ft.border.BorderSide(1, ft.Colors.GREY_400),
+                        right=ft.border.BorderSide(1, ft.Colors.GREY_400),
+                        top=ft.border.BorderSide(1, ft.Colors.GREY_400),
+                        bottom=ft.border.BorderSide(1, ft.Colors.GREY_400),
+                    ),
+                    padding=10,
                 ),
-                padding=10,
-            ),
-            quit_button,
-        ],
-        spacing=12,
+                quit_button,
+            ],
+            spacing=12,
+            expand=True,
+            scroll=ft.ScrollMode.AUTO
+        ), 
+        expand=True
     )
 
     return view

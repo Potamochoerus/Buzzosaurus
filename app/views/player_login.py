@@ -34,19 +34,21 @@ async def build_player_login_view(page: ft.Page, router):
     connect_button = ft.Button("Log in", width=280)
     back_button = ft.Button("Back", width=120)
 
-    view = ft.Column(
-        controls=[
-            ft.Text("Buzzosaurus", size=32, weight=ft.FontWeight.BOLD),
-            name_field,
-            ip_field,
-            port_field,
-            connect_button,
-            status_text,
-            back_button,
-        ],
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        spacing=15,
-        expand=True,
+    view = ft.SafeArea(
+        content=ft.Column(
+            controls=[
+                ft.Text("Buzzosaurus", size=32, weight=ft.FontWeight.BOLD),
+                name_field,
+                ip_field,
+                port_field,
+                connect_button,
+                status_text,
+                back_button,
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=15,
+            expand=True,
+        )
     )
 
     async def on_connect_click(e):
