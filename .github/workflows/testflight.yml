@@ -83,7 +83,8 @@ jobs:
             --yes \
             --clear-cache \
             -v \
-            --build-number "${GITHUB_REF_NAME}_$(date +%Y%m%d)_${GITHUB_RUN_NUMBER}" \
+            --build-version "${GITHUB_REF_NAME#v}" \
+            --build-number "$(date +%Y%m%d).${GITHUB_RUN_NUMBER}" \
             --ios-team-id "${{ secrets.APPLE_TEAM_ID }}" \
             --ios-signing-certificate "Apple Distribution" \
             --ios-provisioning-profile "${{ secrets.PROVISIONING_PROFILE_NAME }}" \
