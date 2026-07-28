@@ -1,9 +1,9 @@
 name: Build & Upload to TestFlight
  
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
+    tags: 
+      - 'v*'
  
 env:
   UV_PYTHON: 3.13
@@ -11,15 +11,14 @@ env:
   FLET_CLI_NO_RICH_OUTPUT: 1
  
 jobs:
-  build-and-deploy-pages:
-    permissions:
-      pages: write
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/pages.yml
+  test:
+    uses: ./.github/workflows/tests.yml
+ 
+  lint:
+    uses: ./.github/workflows/black.yml
  
   build-and-upload-ios:
-    needs: [build-and-deploy-pages]     # only runs if both succeed
+    needs: [test, lint]     # only runs if both succeed
     runs-on: macos-latest
     timeout-minutes: 60
  
