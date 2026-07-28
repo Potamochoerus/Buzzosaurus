@@ -12,10 +12,14 @@ env:
  
 jobs:
   build-and-deploy-pages:
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
     uses: ./.github/workflows/pages.yml
  
   build-and-upload-ios:
-    needs: [deploy-pages]     # only runs if both succeed
+    needs: [build-and-deploy-pages]     # only runs if both succeed
     runs-on: macos-latest
     timeout-minutes: 60
  
