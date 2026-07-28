@@ -1,6 +1,6 @@
 # Buzzosaurus
 
-![GitHub tag](https://img.shields.io/github/v/tag/USERNAME/REPO)
+![GitHub tag](https://img.shields.io/github/v/tag/Potamochoerus/Buzzosaurus)
 
 A buzzer app that can be used for quizz party games. It works on local network.
 An admin hosts the game on a PC/smartphone, the other players can join. Each player can
