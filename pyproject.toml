@@ -26,3 +26,7 @@ ITSAppUsesNonExemptEncryption = false
 NSPhotoLibraryUsageDescription = "This app does not access the photo library."
 NSCameraUsageDescription = "This app does not access the camera."
 NSLocationWhenInUseUsageDescription = "This app does not access location services."
+
+[tool.pytest.ini_options]
+pythonpath = "."
+testpaths = ["tests"]
