@@ -1,0 +1,62 @@
+name: Build Android
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  PYTHON: 3.13
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "${{ env.PYTHON }}"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install Flet
+        run: pip install flet[all]
+
+      - name: Decode keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > $GITHUB_WORKSPACE/upload-keystore.jks
+
+      - name: Build AAB
+        env:
+          FLET_ANDROID_SIGNING_KEY_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          FLET_ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          FLET_ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          flet build aab \
+            --yes \
+            --android-signing-key-store "$GITHUB_WORKSPACE/upload-keystore.jks" \
+            --android-signing-key-alias "$FLET_ANDROID_SIGNING_KEY_ALIAS" \
+            --android-signing-key-store-password "$FLET_ANDROID_SIGNING_KEY_STORE_PASSWORD" \
+            --android-signing-key-password "$FLET_ANDROID_SIGNING_KEY_PASSWORD"
+
+      - name: Locate AAB
+        run: find "$GITHUB_WORKSPACE/build" -type f -name '*.aab' -print
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release
+          path: build/aab/*.aab
+          if-no-files-found: error
+
+      - name: Clean up keystore
+        if: always()
+        run: rm -f $GITHUB_WORKSPACE/upload-keystore.jks
