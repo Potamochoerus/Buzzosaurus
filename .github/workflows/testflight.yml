@@ -84,7 +84,7 @@ jobs:
             --clear-cache \
             -v \
             --build-version "${GITHUB_REF_NAME#v}" \
-            --build-number "$(date +%Y%m%d).${GITHUB_RUN_NUMBER}" \
+            --build-number "$(date +%Y%m%d)${GITHUB_RUN_NUMBER}" \
             --ios-team-id "${{ secrets.APPLE_TEAM_ID }}" \
             --ios-signing-certificate "Apple Distribution" \
             --ios-provisioning-profile "${{ secrets.PROVISIONING_PROFILE_NAME }}" \
@@ -126,7 +126,7 @@ jobs:
             -t ios \
             --apiKey "$APPSTORE_KEY_ID" \
             --apiIssuer "$APPSTORE_ISSUER_ID"
- 
+
       - name: Clean up keychain
         if: always()
         run: |
